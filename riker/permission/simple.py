@@ -2,18 +2,26 @@ from __future__ import annotations
 
 from fnmatch import fnmatch
 
-from base import BasePermissionHandler
 from irctokens.line import Line
+
+from .base import BasePermissionHandler
 
 # spell-checker: words oper
 
 
-class DefaultPermissionHandler(BasePermissionHandler):
-    def __init__(self) -> None:
-        self.mask_permissions: dict[str, list[str]] = {}
-        self.enable_oper = True
-        self.oper_permissions: dict[str, list[str]] = {}
-        super().__init__()
+class SimplePermissionHandler(BasePermissionHandler):
+    def __init__(
+        self,
+        mask_permissions: dict[str, list[str]],
+        enable_oper: bool = True,
+        oper_permissions: dict[str, list[str]] | None = None,
+    ) -> None:
+
+        self.mask_permissions: dict[str, list[str]] = mask_permissions
+        self.enable_oper = enable_oper
+        self.oper_permissions: dict[str, list[str]] = (
+            oper_permissions if oper_permissions is not None else {}
+        )
 
     def check_masks(self, to_check: str) -> list[str]:
         out: list[str] = []
@@ -25,9 +33,6 @@ class DefaultPermissionHandler(BasePermissionHandler):
         return out
 
     def check_oper(self, oper_name: str) -> list[str]:
-        if not self.enable_oper:
-            return []
-
         out = []
 
         for name in self.oper_permissions:
@@ -52,4 +57,4 @@ class DefaultPermissionHandler(BasePermissionHandler):
             if line.tags["oper"] != "":
                 out.extend(self.check_oper(line.tags["oper"]))
 
-        return super().check_permissions(line)
+        return out
