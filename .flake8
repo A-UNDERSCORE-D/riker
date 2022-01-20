@@ -2,13 +2,16 @@
 # Show exactly where in a line the error happened
 #show-source = True
 
-max-line-length = 88
-# Add _ as a builtin for localisation stuff
+max-line-length = 100
 
 # check syntax in doctests
 doctests = True 
 max-complexity = 15
 
+extend-ignore =
+    # See https://github.com/PyCQA/pycodestyle/issues/373
+    E203,
+    D100,
 # Plugin configs
 # required plugins:
 
