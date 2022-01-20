@@ -10,6 +10,8 @@ from .base import BasePermissionHandler
 
 
 class SimplePermissionHandler(BasePermissionHandler):
+    """SimplePermissionHandler implements a mask and oper based permission handler."""
+
     def __init__(
         self,
         mask_permissions: dict[str, list[str]],
@@ -23,7 +25,7 @@ class SimplePermissionHandler(BasePermissionHandler):
             oper_permissions if oper_permissions is not None else {}
         )
 
-    def check_masks(self, to_check: str) -> list[str]:
+    def _check_masks(self, to_check: str) -> list[str]:
         out: list[str] = []
 
         for mask in self.mask_permissions:
@@ -32,7 +34,7 @@ class SimplePermissionHandler(BasePermissionHandler):
 
         return out
 
-    def check_oper(self, oper_name: str) -> list[str]:
+    def _check_oper(self, oper_name: str) -> list[str]:
         out = []
 
         for name in self.oper_permissions:
@@ -43,18 +45,19 @@ class SimplePermissionHandler(BasePermissionHandler):
 
     def check_permissions(self, line: Line) -> list[str]:
         """
-        Return the permissions the sender of a given line has
+        Return the permissions the sender of a given line has.
 
         :param line: The line to check
         :return: a list of permission strings
         """
         out: list[str] = []
-        out.extend(self.check_masks(str(line.hostmask)))
+        out.extend(self._check_masks(str(line.hostmask)))
 
         if self.enable_oper and line.tags is not None and "oper" in line.tags:
             out.append("oper")
 
             if line.tags["oper"] != "":
-                out.extend(self.check_oper(line.tags["oper"]))
+                out.extend(self._check_oper(line.tags["oper"]))
+                out.append(f'oper.{line.tags["oper"]}')
 
         return out
