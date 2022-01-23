@@ -21,3 +21,5 @@ class TestCommand:
         await c.fire("str args", ["str", "args"], None)
 
         assert called
+
+    # TODO: cover the rest of Command#fire

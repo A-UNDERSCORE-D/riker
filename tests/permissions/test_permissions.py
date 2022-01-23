@@ -48,5 +48,5 @@ class TestSimplePermissionHandler:
             handler.check_permissions(
                 irctokens.line.tokenise("@oper :test PRIVMSG asd :asdf")
             )
-            == []
+            == set()
         )
