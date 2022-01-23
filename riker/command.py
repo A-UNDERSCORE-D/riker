@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Awaitable, Callable
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Mapping, Sequence, TypeGuard
 
 if TYPE_CHECKING:
     from irctokens.line import Line
@@ -19,7 +19,7 @@ class Command:
     permissions: list[str] | None
     arg_count: int | None
 
-    callback: Callable[..., Awaitable[str | None]]
+    callback: Callable[..., Awaitable[str | None]] | Callable[..., str | None]
     allow_inspection: bool = True
     override_params: list[str] | None = None
 
@@ -37,7 +37,7 @@ class Command:
         Its expected that callers verify perms.
         """
         if not self.allow_inspection:
-            return await self.callback(args_str)
+            return await self._call(args_str)
 
         passable = {
             "args": args,
@@ -46,7 +46,7 @@ class Command:
         }
 
         if self.override_params is not None:
-            return await self.callback(
+            return await self._call(
                 *(passable[n] for n in self.override_params if n in passable)
             )
 
@@ -63,4 +63,18 @@ class Command:
             if name in passable:
                 to_pass[name] = passable[name]
 
-        return await self.callback(**params)
+        return await self._call(**to_pass)
+
+    @staticmethod
+    def _awaitable(
+        c: Callable[..., Awaitable[str | None]] | Callable[..., str | None]
+    ) -> TypeGuard[Callable[..., Awaitable[str | None]]]:
+        return inspect.iscoroutinefunction(c)
+
+    async def _call(self, *args: Any, **kwargs: Any) -> str | None:
+        if self._awaitable(self.callback):
+            return await self.callback(*args, **kwargs)
+
+        # It must be the non-async version
+        cb: Callable[..., str | None] = self.callback  # type: ignore
+        return cb(*args, **kwargs)

@@ -1,10 +1,10 @@
 """Command handler library."""
 from .command import Command
-from .handler import CommandHandler
+from .handler import Beard
 from .permission import BasePermissionHandler, SimplePermissionHandler
 
 __all__ = [
-    "CommandHandler",
+    "Beard",
     "Command",
     "BasePermissionHandler",
     "SimplePermissionHandler",

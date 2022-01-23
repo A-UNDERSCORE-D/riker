@@ -43,21 +43,21 @@ class SimplePermissionHandler(BasePermissionHandler):
 
         return out
 
-    def check_permissions(self, line: Line) -> list[str]:
+    def check_permissions(self, line: Line) -> set[str]:
         """
         Return the permissions the sender of a given line has.
 
         :param line: The line to check
         :return: a list of permission strings
         """
-        out: list[str] = []
-        out.extend(self._check_masks(str(line.hostmask)))
+        out: set[str] = set()
+        out.update(self._check_masks(str(line.hostmask)))
 
         if self.enable_oper and line.tags is not None and "oper" in line.tags:
-            out.append("oper")
+            out.add("oper")
 
             if line.tags["oper"] != "":
-                out.extend(self._check_oper(line.tags["oper"]))
-                out.append(f'oper.{line.tags["oper"]}')
+                out.update(self._check_oper(line.tags["oper"]))
+                out.add(f'oper.{line.tags["oper"]}')
 
         return out

@@ -12,7 +12,7 @@ class BasePermissionHandler(abc.ABC):
     """
 
     @abc.abstractmethod
-    def check_permissions(self, line: Line) -> list[str]:
+    def check_permissions(self, line: Line) -> set[str]:
         """
         Return the permissions available to the sender of a given line.
 
