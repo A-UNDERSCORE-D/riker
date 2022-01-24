@@ -4,16 +4,18 @@ from typing import TYPE_CHECKING, Awaitable, Callable, Sequence, TypeVar
 
 from .command import Command
 
-_F = TypeVar("_F", bound=Callable[..., Awaitable[str | None]])
 if TYPE_CHECKING:
+    RETURNS = str | list[str] | None
     TAG_VALUE = tuple[str | list[str], str, str | list[str] | None, int | None]
+
+_F = TypeVar("_F", bound=Callable[..., Awaitable[RETURNS]] | Callable[..., RETURNS])
 
 COMMAND_TAG = "__riker_command_marker"
 
 
 def command(
     name: str | Sequence[str],
-    help: str,
+    help: str | None = None,
     required_permissions: str | list[str] | None = None,
     required_args: int | None = None,
 ) -> Callable[[_F], _F]:
@@ -24,6 +26,12 @@ def command(
             raise ValueError(
                 f"Command {name} defined twice? ({f} has attribute already)"
             )
+        nonlocal help
+        if help is None:
+            help = f.__doc__
+
+        if help == "":
+            raise ValueError("Commands must have help responses")
 
         setattr(f, COMMAND_TAG, (name, help, required_permissions, required_args))
         return f
