@@ -1,10 +1,10 @@
-from typing import Callable
-
 import pytest
 from irctokens.line import Line, tokenise
 
 from riker import Beard, SimplePermissionHandler
 from riker.command import Command
+
+# spell-checker: words noperms oper derg blarg
 
 
 async def _simple(args: list[str]) -> str:
@@ -84,6 +84,7 @@ class TestHandler:
         line: Line,
         expected: list[str] | None,
     ) -> None:
+        """Ensure that commands are correctly dispatched."""
 
         await command_handler.on_line(line, current_nick="bot")
 
