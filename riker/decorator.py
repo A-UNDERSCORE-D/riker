@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import itertools
 from typing import TYPE_CHECKING, Awaitable, Callable, Sequence, TypeVar
 
 from .command import Command
 
 if TYPE_CHECKING:
     RETURNS = str | list[str] | None
-    TAG_VALUE = tuple[str | list[str], str, str | list[str] | None, int | None]
+    TAG_VALUE = tuple[
+        str | list[str], str | list[str], str | list[str] | None, int | None
+    ]
 
 _F = TypeVar("_F", bound=Callable[..., Awaitable[RETURNS]] | Callable[..., RETURNS])
 
@@ -15,7 +18,7 @@ COMMAND_TAG = "__riker_command_marker"
 
 def command(
     name: str | Sequence[str],
-    help: str | None = None,
+    help: list[str] | str | None = None,
     required_permissions: str | list[str] | None = None,
     required_args: int | None = None,
 ) -> Callable[[_F], _F]:
@@ -42,7 +45,7 @@ def command(
 def scan_for_commands(x: object) -> list[Command]:
     """Find marked functions."""
     out = []
-    for v in x.__dict__.values():
+    for v in itertools.chain(x.__dict__.values(), x.__class__.__dict__.values()):
         if not hasattr(v, COMMAND_TAG):
             continue
 

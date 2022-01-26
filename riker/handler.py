@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Callable
 
+from .decorator import command, scan_for_commands
+
 if TYPE_CHECKING:
     from irctokens.line import Line
 
@@ -27,6 +29,21 @@ class Beard:
 
         self.logger = logging.getLogger("command_handler")
         self.permissions = permissions
+
+    def add_commands_for_class(self, instance: object) -> None:
+        """
+        Add the decorated commands found on instance to callbacks.
+
+        :param instance: The object to scan for commands
+        """
+        res = scan_for_commands(instance)
+        for cmd in res:
+            names = cmd.name
+            if isinstance(names, str):
+                names = [names]
+
+            for name in names:
+                self._commands[name] = cmd
 
     async def on_line(self, line: Line, current_nick: str | None = None) -> None:
         """
@@ -80,7 +97,11 @@ class Beard:
             )
             return
 
-        self.reply(target, res)
+        if isinstance(res, str):
+            return self.reply(target, res)
+
+        for s in res:
+            self.reply(target, s)
 
     def extract_cmd(self, line: Line, current_nick: str | None) -> tuple[str, str]:
         """
@@ -141,3 +162,36 @@ class Beard:
             raise ValueError(f"Command {cmd.name} already exists!")
 
         self._commands[cmd_name.upper()] = cmd
+
+    @command("help", "help [command_name] -- Provides help on other commands.")
+    def _help_handler(self, args: list[str]) -> str | list[str] | None:
+        if len(args) == 0:
+            return ", ".join(
+                (f"\x02{cmd.upper()}\x02" for cmd in self._commands.keys())
+            )
+
+        to_check = args[0]
+        if to_check.upper() not in self._commands:
+            return f"command \x02{to_check}\x02 not found"
+
+        cmd = self._commands[to_check.upper()]
+        help = []
+
+        if isinstance(cmd.help, str):
+            if "\n" in cmd.help:
+                help = cmd.help.splitlines()
+
+            else:
+                help = [cmd.help]
+
+        elif isinstance(cmd.help, list):
+            help = cmd.help
+
+        else:
+            help = [cmd.help]
+
+        if len(help) == 1:
+            return f"Help for \x02{to_check}\x02: {help[0]}"
+
+        else:
+            return [f"Help for \x02{to_check}\x02:"] + help
