@@ -1,3 +1,6 @@
+import functools
+from contextlib import ExitStack
+
 import pytest
 from irctokens.line import Line, tokenise
 
@@ -16,17 +19,24 @@ def command_handler() -> Beard:
     """Pytest fixture that returns a CommandHandler instance."""
     b = Beard("~")
 
-    b.add_command(Command("noperms", "test", None, None, _simple))
-    b.add_command(Command("oper", "test", ["oper"], None, _simple))
-    b.add_command(Command("operad", "test", ["oper.ad"], None, _simple))
-    b.add_command(Command("simplePerm", "test", ["test"], None, _simple))
+    b.add_command(Command("noperms", "noperms test", None, None, _simple))
+    b.add_command(Command("oper", "oper test", ["oper"], None, _simple))
+    b.add_command(Command("operad", "oper ad test", ["oper.ad"], None, _simple))
+    b.add_command(
+        Command("simplePerm", "simple permissions test", ["test"], None, _simple)
+    )
 
     b.permissions = SimplePermissionHandler(
         mask_permissions={"*!*@derg": ["test"]},
         oper_permissions={"derg": ["test"]},
     )
 
-    b.reply = lambda target, msg: setattr(b, "response", [target, msg])
+    def _reply(target: str, message: str) -> None:
+        current = getattr(b, "response", [])
+        current.append([target, message])
+        setattr(b, "response", current)
+
+    b.reply = _reply
 
     return b
 
@@ -65,6 +75,8 @@ class TestHandler:
         """Test that handler correctly extracts params."""
         cmd, args = command_handler.extract_cmd(line, "bot")
 
+        print(id(command_handler))
+
         assert (cmd, args) == expected
 
     @pytest.mark.parametrize(
@@ -85,9 +97,38 @@ class TestHandler:
         expected: list[str] | None,
     ) -> None:
         """Ensure that commands are correctly dispatched."""
+        with ExitStack() as e:
+            e.callback(self._clean_handler, command_handler)
 
-        await command_handler.on_line(line, current_nick="bot")
+            await command_handler.on_line(line, current_nick="bot")
 
-        resp: list[str] | None = getattr(command_handler, "response", None)
+            resp: list[list[str]] | None = getattr(command_handler, "response", None)
 
-        assert resp == expected
+            assert resp == [expected]
+
+    @staticmethod
+    def _clean_handler(h: Beard) -> None:
+        if hasattr(h, "response"):
+            delattr(h, "response")
+
+    async def test_help(self, command_handler: Beard) -> None:
+        """Ensure that help commands return the expected data."""
+        await command_handler.on_line(tokenise(_PFX + "~help"))
+
+        assert getattr(command_handler, "response") == [
+            [
+                "test",
+                "\x02HELP\x02, \x02NOPERMS\x02, \x02OPER\x02, \x02OPERAD\x02, \x02SIMPLEPERM\x02",
+            ]
+        ]
+
+        self._clean_handler(command_handler)
+
+        await command_handler.on_line(tokenise(_PFX + "~help help"))
+
+        assert getattr(command_handler, "response") == [
+            [
+                "test",
+                "Help for \x02HELP\x02: help [command_name] -- Provides help on other commands.",
+            ]
+        ]

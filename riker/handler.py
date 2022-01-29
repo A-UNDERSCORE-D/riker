@@ -91,7 +91,7 @@ class Beard:
         self.logger.info(f"Allowed access to {cmd!r} for {line.source}")
         split_args: list[str] = []
         if len(args) > 0:
-            split_args: list[str] = args.split(" ")
+            split_args = args.split(" ")
 
         res = await c.fire(args, split_args, line)
 
@@ -174,11 +174,11 @@ class Beard:
                 (f"\x02{cmd.upper()}\x02" for cmd in self._commands.keys())
             )
 
-        to_check = args[0]
+        to_check = args[0].upper()
         if to_check.upper() not in self._commands:
             return f"command \x02{to_check}\x02 not found"
 
-        cmd = self._commands[to_check.upper()]
+        cmd = self._commands[to_check]
         help = []
 
         if isinstance(cmd.help, str):
