@@ -6,10 +6,7 @@ from irctokens.line import Line
 
 
 class BasePermissionHandler(abc.ABC):
-    """
-    BasePermisionHandler covers everything required to manage permissions based
-    on incoming information from an IRC message
-    """
+    """BasePermissionManager defines the interface for permission managers."""
 
     @abc.abstractmethod
     def check_permissions(self, line: Line) -> set[str]:

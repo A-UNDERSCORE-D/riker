@@ -1,4 +1,3 @@
-import functools
 from contextlib import ExitStack
 
 import pytest
