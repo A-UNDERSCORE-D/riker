@@ -30,6 +30,8 @@ class Beard:
         self.logger = logging.getLogger("command_handler")
         self.permissions = permissions
 
+        self.add_commands_for_class(self)
+
     def add_commands_for_class(self, instance: object) -> None:
         """
         Add the decorated commands found on instance to callbacks.
@@ -43,7 +45,7 @@ class Beard:
                 names = [names]
 
             for name in names:
-                self._commands[name] = cmd
+                self._commands[name.upper()] = cmd
 
     async def on_line(self, line: Line, current_nick: str | None = None) -> None:
         """
@@ -87,7 +89,9 @@ class Beard:
 
         # at this point, permissions have passed etc.
         self.logger.info(f"Allowed access to {cmd!r} for {line.source}")
-        split_args: list[str] = args.split(" ")
+        split_args: list[str] = []
+        if len(args) > 0:
+            split_args: list[str] = args.split(" ")
 
         res = await c.fire(args, split_args, line)
 
