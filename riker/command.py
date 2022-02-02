@@ -4,12 +4,14 @@ import inspect
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, TypeGuard, Union
 
+from .command_args import Argument
+
 if TYPE_CHECKING:
     from irctokens.line import Line
 
     CALLBACK = Union[
-        Callable[..., str | list[str] | None],
-        Callable[..., Awaitable[str | list[str] | None]],
+        Callable[[Argument], str | list[str] | None],
+        Callable[[Argument], Awaitable[str | list[str] | None]],
     ]
 
 # spell-checker: words iscoroutinefunction
@@ -24,62 +26,41 @@ class Command:
     permissions: list[str] | None
     arg_count: int | None
 
-    callback: Callable[..., Awaitable[str | None]] | Callable[..., str | None]
+    callback: CALLBACK
     allow_inspection: bool = True
     override_params: list[str] | None = None
 
     async def fire(
         self,
-        args_str: str,
-        args: list[str],
+        args: str,
         raw_line: Line | None,
-        **kwargs: dict[str, Any]
+        bot_nick: str | None,
+        command: str,
+        **extra: dict[str, Any]
     ) -> str | list[str] | None:
         """
-        Execute self.callback, dynamically provide any extra data it requests.
-
-        Note that this does not do *ANY* permission checking.
-        Its expected that callers verify perms.
+        Execute self.callback, creating the argument object as requested.
         """
-        if not self.allow_inspection:
-            return await self._call(args_str)
 
-        passable = {
-            "args": args,
-            "args_str": args_str,
-            "raw_line": raw_line,
-        }
+        args_to_send = Argument(
+            line=raw_line,
+            args_str=args,
+            command=command,
+            bot_nick=bot_nick,
+            extra_data=extra,
+        )
 
-        if self.override_params is not None:
-            return await self._call(
-                *(passable[n] for n in self.override_params if n in passable)
-            )
-
-        # inspect the signature to find what we want to pass
-
-        to_pass: dict[str, Any] = {}
-        to_pass.update(kwargs)
-
-        sig = inspect.signature(self.callback)
-
-        params = sig.parameters
-
-        for name in params.keys():
-            if name in passable:
-                to_pass[name] = passable[name]
-
-        return await self._call(**to_pass)
+        return await self._call(args_to_send)
 
     @staticmethod
     def _awaitable(
-        c: Callable[..., Awaitable[str | None]] | Callable[..., str | None]
-    ) -> TypeGuard[Callable[..., Awaitable[str | None]]]:
+        c: CALLBACK,
+    ) -> TypeGuard[Callable[[Argument], Awaitable[str | None]]]:
         return inspect.iscoroutinefunction(c)
 
-    async def _call(self, *args: Any, **kwargs: Any) -> str | list[str] | None:
+    async def _call(self, args: Argument) -> str | list[str] | None:
+        cb = self.callback
         if self._awaitable(self.callback):
-            return await self.callback(*args, **kwargs)
+            return await self.callback(args)
 
-        # It must be the non-async version
-        cb: Callable[..., str | list[str] | None] = self.callback  # type: ignore
-        return cb(*args, **kwargs)
+        return cb(args)  # type: ignore -- blame mypy

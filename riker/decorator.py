@@ -1,14 +1,22 @@
 from __future__ import annotations
 
 import itertools
-from typing import Awaitable, Callable, Sequence, TypeVar
+from ast import Call
+from typing import Any, Awaitable, Callable, Sequence, TypeVar
+
+from riker.command_args import Argument
 
 from .command import Command
 
 RETURNS = str | list[str] | None
 TAG_VALUE = tuple[str | list[str], str | list[str], str | list[str] | None, int | None]
+CALLABLE_METH = Callable[[Any, Argument], RETURNS]
+CALLABLE = Callable[[Argument], RETURNS]
+ACALLABLE_METH = Callable[[Any, Argument], Awaitable[RETURNS]]
+ACALLABLE = Callable[[Argument], Awaitable[RETURNS]]
 
-_F = TypeVar("_F", bound=Callable[..., Awaitable[RETURNS]] | Callable[..., RETURNS])
+
+_F = TypeVar("_F", bound=CALLABLE | CALLABLE_METH | ACALLABLE | ACALLABLE_METH)
 
 COMMAND_TAG = "__riker_command_marker"
 

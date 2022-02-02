@@ -1,4 +1,5 @@
 from riker.command import Command
+from riker.command_args import Argument
 
 
 class TestCommand:
@@ -12,13 +13,13 @@ class TestCommand:
         """Test that command args are split correctly, and that async code is called."""
         called = False
 
-        async def test_func(args: list[str]) -> None:
+        async def test_func(args: Argument) -> None:
             nonlocal called
             called = True
 
         c = Command("test", "test command", None, None, test_func)
 
-        await c.fire("str args", ["str", "args"], None)
+        await c.fire("str args", None, None, "test")
 
         assert called
 

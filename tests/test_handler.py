@@ -5,12 +5,13 @@ from irctokens.line import Line, tokenise
 
 from riker import Beard, SimplePermissionHandler
 from riker.command import Command
+from riker.command_args import Argument
 
 # spell-checker: words noperms oper derg blarg
 
 
-async def _simple(args: list[str]) -> str:
-    return " ".join(args)
+async def _simple(args: Argument) -> str:
+    return args.args_str
 
 
 @pytest.fixture(scope="session")

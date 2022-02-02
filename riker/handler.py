@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Callable
 
+from riker.command_args import Argument
+
 from .decorator import command, scan_for_commands
 
 if TYPE_CHECKING:
@@ -89,11 +91,8 @@ class Beard:
 
         # at this point, permissions have passed etc.
         self.logger.info(f"Allowed access to {cmd!r} for {line.source}")
-        split_args: list[str] = []
-        if len(args) > 0:
-            split_args = args.split(" ")
 
-        res = await c.fire(args, split_args, line)
+        res = await c.fire(args, line, current_nick, cmd.upper())
 
         if res is None:
             self.logger.debug(
@@ -168,13 +167,13 @@ class Beard:
         self._commands[cmd_name.upper()] = cmd
 
     @command("help", "help [command_name] -- Provides help on other commands.")
-    def _help_handler(self, args: list[str]) -> str | list[str] | None:
+    def _help_handler(self, args: Argument) -> str | list[str] | None:
         if len(args) == 0:
             return ", ".join(
                 (f"\x02{cmd.upper()}\x02" for cmd in self._commands.keys())
             )
 
-        to_check = args[0].upper()
+        to_check = args.args[0].upper()
         if to_check.upper() not in self._commands:
             return f"command \x02{to_check}\x02 not found"
 
